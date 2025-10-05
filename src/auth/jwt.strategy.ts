@@ -1,7 +1,10 @@
+/* eslint-disable */
+
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
+import * as cookie from 'cookie';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -11,7 +14,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_SECRET is not defined in the configuration');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req) => {
+          if (!req.headers.cookie) return null;
+          // Parse cookies from the request headers
+          const cookies = cookie.parse(req.headers.cookie);
+          return cookies['access_token'] ?? null;
+        },
+      ]),
       secretOrKey: jwtSecret,
     });
   }
