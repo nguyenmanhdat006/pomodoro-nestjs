@@ -1,6 +1,14 @@
 /* eslint-disable */
 
-import { Body, Controller, Post, Req, UseGuards, Get } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Req,
+  UseGuards,
+  Get,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDTO } from './dto/login.dto';
@@ -23,9 +31,20 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() loginDTO: LoginDTO): Promise<{ token: string }> {
+  async login(
+    @Body() loginDTO: LoginDTO,
+    @Res({ passthrough: true }) res: any,
+  ): Promise<{ message: string }> {
     const token = await this.authService.login(loginDTO);
-    return { token }; // Return the generated JWT token
+    // return { token }; // Return the generated JWT token
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      sameSite: 'lax', // Use 'lax' for CSRF protection
+      secure: process.env.NODE_ENV === 'production', // Set to true in production
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      path: '/', // Cookie path
+    });
+    return { message: 'Login successful, token set in cookie' };
   }
 
   @Get('profile')
